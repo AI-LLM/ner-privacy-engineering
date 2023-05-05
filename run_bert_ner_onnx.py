@@ -154,6 +154,9 @@ class NerModel:
 
 	    # 2. tokenize input
 	    token_output = self.tokenizer(input_split_merge, return_offsets_mapping=True)
+	    print(self.id2label)
+	    print("input_split_merge=",input_split_merge, "token_output=",token_output)
+	    print("input_ids:",len(token_output['input_ids'][0]), 'token_type_ids:',len(token_output['token_type_ids'][0]), 'attention_mask:',len(token_output['attention_mask'][0]), 'offset_mapping:',len(token_output['offset_mapping'][0]))
 
 	    # 3. get word2token & word_ids
 	    word2token = self._map_token_output_to_sentence_(

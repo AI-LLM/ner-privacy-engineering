@@ -1,5 +1,8 @@
 import torch 
-from transformers import BertTokenizerFast
+from transformers import BertTokenizerFast, AutoConfig
+import os.path
+
+pretrained_model_name = "bert-base-cased"
 
 class BertModel(torch.nn.Module):
 
@@ -34,9 +37,18 @@ def export(model, sentence):
 
 if __name__ ==  '__main__':
 
-    tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+    tokenizer = BertTokenizerFast.from_pretrained(pretrained_model_name)
 
     ids_to_labels = torch.load("ids_to_labels.pt")
+
+    if not os.path.isfile('config.json'):
+        config = AutoConfig.from_pretrained(pretrained_model_name)
+        config.label2id = {v: k for k, v in ids_to_labels.items()}
+        config.id2label = ids_to_labels
+        config._num_labels = len(ids_to_labels)
+        with open('config.json', 'w') as fp:
+            fp.write(config.to_json_string())
+            fp.close()
 
     model = torch.load("bert_ner_ft.pt",map_location=torch.device('cpu'))
     model.eval()

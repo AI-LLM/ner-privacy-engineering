@@ -3,10 +3,12 @@ import os
 import pandas as pd
 import torch 
 import numpy as np
-from transformers import BertTokenizerFast, BertForTokenClassification
+from transformers import BertTokenizerFast, BertForTokenClassification, AutoConfig
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.optim import SGD
+
+pretrained_model_name = "bert-base-cased"
 
 def align_label(texts, labels):
     tokenized_inputs = tokenizer(texts, padding='max_length', max_length=512, truncation=True)
@@ -71,7 +73,7 @@ class BertModel(torch.nn.Module):
 
         super(BertModel, self).__init__()
 
-        self.bert = BertForTokenClassification.from_pretrained('bert-base-cased', num_labels=len(unique_labels))
+        self.bert = BertForTokenClassification.from_pretrained(pretrained_model_name, num_labels=len(unique_labels))
 
     def forward(self, input_id, mask, label):
 
@@ -255,7 +257,7 @@ if __name__ ==  '__main__':
     df_val = pd.read_csv('conll_dev_v3_clean.csv')
     df_test = pd.read_csv('conll_test_v3_clean.csv')
 
-    tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased')
+    tokenizer = BertTokenizerFast.from_pretrained(pretrained_model_name)
 
     label_all_tokens = False
 
@@ -267,6 +269,14 @@ if __name__ ==  '__main__':
     labels_to_ids = {k: v for v, k in enumerate(unique_labels)}
     ids_to_labels = {v: k for v, k in enumerate(unique_labels)}
 
+
+    config = AutoConfig.from_pretrained(pretrained_model_name)
+    config.label2id = labels_to_ids
+    config.id2label = ids_to_labels
+    config._num_labels = len(ids_to_labels)
+    with open('config.json', 'w') as fp:
+        fp.write(config.to_json_string())
+        fp.close()
 
     LEARNING_RATE = 5e-3
     EPOCHS = 5
