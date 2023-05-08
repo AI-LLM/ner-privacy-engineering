@@ -1,3 +1,5 @@
+Flair model is [a bit difficult to export to ONNX](https://github.com/flairNLP/flair/issues/2625) for inference optimization and flexible deployment. Therefore we fine tuned the HuggingFace model directly and export to ONNX for [inference in browser](https://github.com/AI-LLM/AnonymizedGPT).
+
 # A Named Entity Recognition Based Approach for Privacy Requirements Engineering
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5801370.svg)](https://doi.org/10.5281/zenodo.5801370)
