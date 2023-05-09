@@ -82,7 +82,7 @@ class BertModel(torch.nn.Module):
         return output
 
 
-def train_loop(model, df_train, df_val):
+def train_loop(model, df_train, df_val, device):
 
     train_dataset = DataSequence(df_train)
     val_dataset = DataSequence(df_val)
@@ -90,17 +90,7 @@ def train_loop(model, df_train, df_val):
     train_dataloader = DataLoader(train_dataset, num_workers=4, batch_size=BATCH_SIZE, shuffle=True)
     val_dataloader = DataLoader(val_dataset, num_workers=4, batch_size=BATCH_SIZE)
 
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-    
-    if not use_cuda and torch.has_mps:
-        device = torch.device('mps')
-        model.to(device)
-
     optimizer = SGD(model.parameters(), lr=LEARNING_RATE)
-
-    if use_cuda:
-        model = model.cuda()
 
     best_acc = 0
     best_loss = 1000
@@ -163,17 +153,11 @@ def train_loop(model, df_train, df_val):
         print(
             f'Epochs: {epoch_num + 1} | Loss: {total_loss_train / len(df_train): .3f} | Accuracy: {total_acc_train / len(df_train): .3f} | Val_Loss: {total_loss_val / len(df_val): .3f} | Accuracy: {total_acc_val / len(df_val): .3f}')
 
-def evaluate(model, df_test):
+def evaluate(model, df_test, device):
 
     test_dataset = DataSequence(df_test)
 
     test_dataloader = DataLoader(test_dataset, num_workers=4, batch_size=1)
-
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-
-    if use_cuda:
-        model = model.cuda()
 
     total_acc_test = 0.0
 
@@ -227,13 +211,7 @@ def align_word_ids(texts):
     return label_ids
 
 
-def evaluate_one_text(model, sentence):
-
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-
-    if use_cuda:
-        model = model.cuda()
+def evaluate_one_text(model, sentence, device):
 
     text = tokenizer(sentence, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
 
@@ -283,10 +261,59 @@ if __name__ ==  '__main__':
     BATCH_SIZE = 2
 
     model = BertModel()
-    train_loop(model, df_train, df_val)
+
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    
+    if not use_cuda and torch.has_mps:
+        device = torch.device('mps')
+        model.to(device)
+    print("Using Device: {}".format(device))
+
+    """Using Device: mps (MacBook Air M1 2020 16G, MacOS 13.3.1)
+100%|█| 486/486 [05:45<00:00,  1.41it/s]
+Epochs: 1 | Loss:  0.043 | Accuracy:  0.726 | Val_Loss:  0.036 | Accuracy:  0.739
+100%|█| 486/486 [05:39<00:00,  1.43it/s]
+Epochs: 2 | Loss:  0.036 | Accuracy:  0.746 | Val_Loss:  0.034 | Accuracy:  0.739
+100%|█| 486/486 [05:41<00:00,  1.42it/s]
+Epochs: 3 | Loss:  0.034 | Accuracy:  0.746 | Val_Loss:  0.032 | Accuracy:  0.739
+100%|█| 486/486 [05:51<00:00,  1.38it/s]
+Epochs: 4 | Loss:  0.032 | Accuracy:  0.749 | Val_Loss:  0.031 | Accuracy:  0.747
+100%|█| 486/486 [06:01<00:00,  1.35it/s]
+Epochs: 5 | Loss:  0.031 | Accuracy:  0.761 | Val_Loss:  0.030 | Accuracy:  0.759
+Using Device: cpu
+100%|█| 486/486 [14:19<00:00,  1.77s/it]
+Epochs: 1 | Loss:  0.622 | Accuracy:  0.805 | Val_Loss:  0.495 | Accuracy:  0.853
+100%|█| 486/486 [14:10<00:00,  1.75s/it]
+Epochs: 2 | Loss:  0.436 | Accuracy:  0.864 | Val_Loss:  0.441 | Accuracy:  0.869
+100%|█| 486/486 [14:22<00:00,  1.78s/it]
+Epochs: 3 | Loss:  0.368 | Accuracy:  0.886 | Val_Loss:  0.426 | Accuracy:  0.870
+100%|█| 486/486 [14:21<00:00,  1.77s/it]
+Epochs: 4 | Loss:  0.319 | Accuracy:  0.900 | Val_Loss:  0.403 | Accuracy:  0.877
+100%|█| 486/486 [14:27<00:00,  1.78s/it]
+Epochs: 5 | Loss:  0.283 | Accuracy:  0.914 | Val_Loss:  0.392 | Accuracy:  0.883
+Test Accuracy:  0.859
+Using Device: mps
+100%|█| 486/486 [05:34<00:00,  1.45it/s]
+Epochs: 1 | Loss:  0.043 | Accuracy:  0.728 | Val_Loss:  0.035 | Accuracy:  0.739
+100%|█| 486/486 [05:32<00:00,  1.46it/s]
+Epochs: 2 | Loss:  0.036 | Accuracy:  0.746 | Val_Loss:  0.034 | Accuracy:  0.739
+100%|█| 486/486 [05:23<00:00,  1.50it/s]
+Epochs: 3 | Loss:  0.034 | Accuracy:  0.746 | Val_Loss:  0.032 | Accuracy:  0.739
+100%|█| 486/486 [05:23<00:00,  1.50it/s]
+Epochs: 4 | Loss:  0.032 | Accuracy:  0.748 | Val_Loss:  0.031 | Accuracy:  0.744
+100%|█| 486/486 [05:33<00:00,  1.46it/s]
+Epochs: 5 | Loss:  0.031 | Accuracy:  0.757 | Val_Loss:  0.029 | Accuracy:  0.758
+Test Accuracy:  0.733
+    """
+
+    if use_cuda:
+        model = model.cuda()
+
+    train_loop(model, df_train, df_val, device)
 
     torch.save(model, "bert_ner_aug_mr.pt")
 
-    evaluate(model, df_test)
+    evaluate(model, df_test, device)
 
-    evaluate_one_text(model,"As a surveyor, I want to be able to log into a system and enter information about the geospatial coordinates, building type, and characteristics for each survey I perform in a day, so that all of my survey data is stored in one central location and is easily accessible for analysis and reporting. Acceptance Criteria: The surveyor is able to log into the system using their unique credentials. The surveyor is able to enter the geospatial coordinates (latitude and longitude) of the building being surveyed.")
+    evaluate_one_text(model,"As a surveyor, I want to be able to log into a system and enter information about the geospatial coordinates, building type, and characteristics for each survey I perform in a day, so that all of my survey data is stored in one central location and is easily accessible for analysis and reporting. Acceptance Criteria: The surveyor is able to log into the system using their unique credentials. The surveyor is able to enter the geospatial coordinates (latitude and longitude) of the building being surveyed.", device)
